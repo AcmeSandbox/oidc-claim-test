@@ -1,0 +1,25 @@
+name: OIDC Claim Dump
+on: workflow_dispatch
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  dump-claims:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get OIDC token and decode claims
+        run: |
+          TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://test.example.com" | jq -r .value)
+
+          echo "=== JWT Header ==="
+          echo $TOKEN | cut -d. -f1 | base64 -d 2>/dev/null | jq .
+
+          echo "=== JWT Claims ==="
+          echo $TOKEN | cut -d. -f2 | base64 -d 2>/dev/null | jq .
+
+          echo "=== Looking for repo_property_ claims ==="
+          echo $TOKEN | cut -d. -f2 | base64 -d 2>/dev/null | jq 'to_entries[] | select(.key | startswith("repo_property_"))'
+
+          echo "=== All claim keys ==="
+          echo $TOKEN | cut -d. -f2 | base64 -d 2>/dev/null | jq 'keys[]'
